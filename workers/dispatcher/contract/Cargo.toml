@@ -19,11 +19,16 @@ serde = "1.0.217"
 
 dcap-qvl = { git = "https://github.com/mattlockyer/dcap-qvl" }
 
-rustls-webpki = {git = "https://github.com/mattlockyer/webpki", default-features = false, features=[
-"near-wasm",]}
+# rustls-webpki = {git = "https://github.com/mattlockyer/webpki", default-features = false, features=[
+#    "near-wasm",
+# ]}
 
 [dev-dependencies]
 near-sdk = { version = "5.7.0", features = ["unit-testing"] }
+
+[package.metadata.near.reproducible_build]
+image = "sourcescan/cargo-near:0.7.1-rust-1.80.0"
+dockerfile = "Dockerfile"
 
 [profile.release]
 codegen-units = 1
