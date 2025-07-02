@@ -39,3 +39,9 @@ contracts/chunker/.env
 contracts/dispatcher/.env
 dispatcher/contract/target/
 chunker/contract/target/
+workers-index/
+contracts/rtav2/target/
+DEPLOYMENT_READY.md
+.gitignore
+docker-compose.phala.yml
+

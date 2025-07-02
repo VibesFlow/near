@@ -6,9 +6,9 @@ use near_sdk::{
     AccountId, Gas, NearToken, PanicOnDefault, Promise,
 };
 
-// Note: dcap-qvl doesn't compile to WASM currently
-// use dcap_qvl::{verify, QuoteCollateralV3};
+use dcap_qvl::{verify, QuoteCollateralV3};
 
+mod collateral;
 mod ecdsa;
 mod external;
 mod utils;
@@ -17,7 +17,7 @@ mod utils;
 const FILECOIN_CALIBRATION_CHAIN_ID: u64 = 314159;
 const FILECOIN_RPC_URL: &str = "https://api.calibration.node.glif.io/rpc/v1";
 
-// Minimal addition for dispatcher tracking
+// Dispatcher tracking
 #[near(serializers = [json, borsh])]
 #[derive(Clone)]
 pub struct DispatchRecord {
@@ -40,7 +40,7 @@ pub struct Contract {
     pub owner_id: AccountId,
     pub approved_codehashes: IterableSet<String>,
     pub worker_by_account_id: IterableMap<AccountId, Worker>,
-    // Minimal addition for dispatcher functionality
+    // Minimal dispatcher functionality
     pub dispatch_records: IterableMap<String, Vec<DispatchRecord>>, // rta_id -> dispatches
 }
 
@@ -57,18 +57,18 @@ impl Contract {
         }
     }
 
-    // Approve a new codehash - EXACT copy from template
+    // Approve a new codehash (from template)
     pub fn approve_codehash(&mut self, codehash: String) {
         self.require_owner();
         self.approved_codehashes.insert(codehash);
     }
 
-    // Get approved codehashes - needed for worker registration
+    // Get approved codehashes (for worker registration)
     pub fn get_approved_codehashes(&self) -> Vec<String> {
         self.approved_codehashes.iter().cloned().collect()
     }
 
-    /// Core signing function - EXACT copy from template
+    /// Core signing function (from template)
     pub fn sign_tx(
         &mut self,
         payload: Vec<u8>,
@@ -82,7 +82,7 @@ impl Contract {
         ecdsa::get_sig(payload, derivation_path, key_version)
     }
 
-    // Register worker with TEE attestation signature matching
+    // Register worker with TEE attestation - EXACT copy from template
     pub fn register_worker(
         &mut self,
         quote_hex: String,
@@ -90,48 +90,31 @@ impl Contract {
         checksum: String,
         tcb_info: String,
     ) -> bool {
-        // Basic validation of TEE parameters
-        require!(!quote_hex.is_empty(), "Quote hex cannot be empty");
-        require!(!collateral.is_empty(), "Collateral cannot be empty");
-        require!(!checksum.is_empty(), "Checksum cannot be empty");
-        require!(!tcb_info.is_empty(), "TCB info cannot be empty");
-        
-        // Extract codehash from tcb_info or use checksum as fallback
-        let codehash = if let Ok(tcb_info_json) = serde_json::from_str::<serde_json::Value>(&tcb_info) {
-            // Try to extract codehash from app_compose in tcb_info
-            if let Some(app_compose) = tcb_info_json.get("app_compose").and_then(|v| v.as_str()) {
-                // Look for our dispatcher image pattern
-                if let Some(start) = app_compose.find("vibesflow/dispatcher:latest@sha256:") {
-                    let start_pos = start + "vibesflow/dispatcher:latest@sha256:".len();
-                    if let Some(end) = app_compose[start_pos..].find("\\n").or_else(|| app_compose[start_pos..].find(" ")) {
-                        let extracted_hash = &app_compose[start_pos..start_pos + end.min(64)];
-                        if extracted_hash.len() == 64 && extracted_hash.chars().all(|c| c.is_ascii_hexdigit()) {
-                            extracted_hash.to_string()
-                        } else {
-                            checksum.clone()
-                        }
-                    } else {
-                        checksum.clone()
-                    }
-                } else {
-                    checksum.clone()
-                }
-            } else {
-                checksum.clone()
-            }
-        } else {
-            checksum.clone()
-        };
+        let collateral = collateral::get_collateral(collateral);
+        let quote = decode(quote_hex).unwrap();
+        let now = block_timestamp() / 1000000000;
+        let result = verify::verify(&quote, &collateral, now).expect("report is not verified");
+        let report = result.report.as_td10().unwrap();
+        let report_data = format!("{}", String::from_utf8_lossy(&report.report_data));
+
+        // verify the predecessor matches the report data
+        require!(
+            env::predecessor_account_id() == report_data,
+            format!("predecessor_account_id != report_data: {}", report_data)
+        );
+
+        let rtmr3 = encode(report.rt_mr3.to_vec());
+        let shade_agent_app_image = collateral::verify_codehash(tcb_info, rtmr3);
 
         // verify the code hashes are approved
-        require!(self.approved_codehashes.contains(&codehash), "Codehash not approved");
+        require!(self.approved_codehashes.contains(&shade_agent_app_image));
 
         let predecessor = env::predecessor_account_id();
         self.worker_by_account_id.insert(
             predecessor,
             Worker {
                 checksum,
-                codehash,
+                codehash: shade_agent_app_image,
             },
         );
 
