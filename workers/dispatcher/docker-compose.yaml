@@ -1,0 +1,13 @@
+services:
+    dispatcher:
+        image: vibesflow/dispatcher:latest
+        # Update with your actual code hash from docker build
+        labels:
+            - "dstack.image_id=e37aad8413f17218546991dbe866893802ec0505d1e3bc03a876b06053984925"
+        ports:
+            - '3000:3000'
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        restart: always
+        environment:
+            - NODE_ENV=production

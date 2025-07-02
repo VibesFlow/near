@@ -1,0 +1,23 @@
+{
+    "private": true,
+    "name": "vibesflow-chunker",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build", 
+        "start": "next start",
+        "docker:build": "docker buildx build --platform linux/amd64 --no-cache --target prod -t ghcr.io/vibesflow/chunker:latest .",
+        "docker:run": "sudo docker run --rm -p 3000:3000 ghcr.io/vibesflow/chunker:latest",
+        "docker:push": "docker push ghcr.io/vibesflow/chunker:latest"
+    },
+    "dependencies": {
+        "@neardefi/shade-agent-js": "^0.2.1",
+        "@phala/dstack-sdk": "^0.1.7",
+        "dotenv": "^16.4.7",
+        "near-api-js": "^5.0.1",
+        "near-seed-phrase": "^0.2.1",
+        "next": "latest",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "wavefile": "^11.0.0"
+    }
+}

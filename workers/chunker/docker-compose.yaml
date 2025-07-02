@@ -1,0 +1,9 @@
+services:
+    web:
+        platform: linux/amd64
+        image: ghcr.io/vibesflow/chunker:latest
+        ports:
+            - '3000:3000'
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        restart: always

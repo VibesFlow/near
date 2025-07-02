@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  swapper:
+    platform: linux/amd64
+    image: ghcr.io/vibesflow/swapper:latest
+    ports:
+      - '3000:3000'
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEAR_ACCOUNT_ID=swapper.vibesflow.testnet
+      - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY_SWAPPER}
+      - NEAR_NETWORK=testnet
+      - AGENT_CONTRACT_ID=v1swapper.vibesflow.testnet
+      - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+      - MPC_CONTRACT_ID=v1.signer-prod.testnet
+      - MPC_DERIVATION_PATH=ethereum-filecoin-vibe-swapper
+      - MPC_KEY_VERSION=0
+      - WORKER_CHECKSUM=swapper_checksum_v2
+      - WORKER_CODEHASH=swapper_codehash_v2
+    restart: always
+
+  chunker:
+    image: ghcr.io/vibesflow/chunker:latest
+    platform: linux/amd64
+    environment:
+      - NEAR_ACCOUNT_ID=chunker.vibesflow.testnet
+      - NEAR_PRIVATE_KEY=${CHUNKER_PRIVATE_KEY}
+      - AGENT_CONTRACT_ID=v1chunker.vibesflow.testnet
+      - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+      - MPC_CONTRACT_ID=v1.signer-prod.testnet
+      - PORT=3000
+      - CHUNK_DURATION_MS=60000
+      - SAMPLE_RATE=44100
+      - CHANNELS=2
+      - BITS_PER_SAMPLE=16
+      - LOG_LEVEL=info
+      - TEE_SOCKET_PATH=/var/run/tappd.sock
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock:ro
+    expose:
+      - "3000"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chunker.rule=Host(`chunker.vibesflow.com`)"
+      - "traefik.http.services.chunker.loadbalancer.server.port=3000"
+
+  dispatcher:
+    platform: linux/amd64
+    image: ghcr.io/vibesflow/dispatcher:latest
+    ports:
+      - '3002:3000'
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEAR_ACCOUNT_ID=dispatcher.vibesflow.testnet
+      - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY_DISPATCHER}
+      - NEAR_NETWORK=testnet
+      - AGENT_CONTRACT_ID=v1dispatcher.vibesflow.testnet
+      - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+      - MPC_CONTRACT_ID=v1.signer-prod.testnet
+      - MPC_DERIVATION_PATH=filecoin-calibration-vibesflow-dispatcher
+      - MPC_KEY_VERSION=0
+      - FILECOIN_NETWORK=calibration
+      - FILECOIN_RPC_URL=https://api.calibration.node.glif.io/rpc/v1
+      - USDFC_ADDRESS=0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0
+      - WORKER_CHECKSUM=dispatcher_checksum_v2
+      - WORKER_CODEHASH=dispatcher_codehash_v2
+    restart: always
+
+  producer:
+    platform: linux/amd64
+    image: ghcr.io/vibesflow/producer:latest
+    ports:
+      - '3003:3000'
+    volumes:
+      - /var/run/tappd.sock:/var/run/tappd.sock
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEAR_ACCOUNT_ID=producer.vibesflow.testnet
+      - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY_PRODUCER}
+      - NEAR_NETWORK=testnet
+      - AGENT_CONTRACT_ID=v1producer.vibesflow.testnet
+      - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+      - MPC_CONTRACT_ID=v1.signer-prod.testnet
+      - MPC_DERIVATION_PATH=ethereum-filecoin-vibesflow
+      - MPC_KEY_VERSION=0
+      - WORKER_CHECKSUM=producer_checksum_v2
+      - WORKER_CODEHASH=producer_codehash_v2
+    restart: always

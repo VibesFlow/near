@@ -1,0 +1,66 @@
+services:
+    dispatcher:
+        platform: linux/amd64
+        image: ghcr.io/vibesflow/dispatcher:latest@sha256:e37aad8413f17218546991dbe866893802ec0505d1e3bc03a876b06053984925
+        container_name: vibesflow-dispatcher
+        ports:
+            - '3000:3000'
+        environment:
+            - NEAR_ACCOUNT_ID=${NEAR_ACCOUNT_ID_DISPATCHER}
+            - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY_DISPATCHER}
+            - NEAR_NETWORK=testnet
+            - AGENT_CONTRACT_ID=${AGENT_CONTRACT_ID_DISPATCHER}
+            - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+            - MPC_CONTRACT_ID=v1.signer-prod.testnet
+            - PORT=3000
+            - NODE_ENV=production
+            - FILECOIN_NETWORK=calibration
+            - FILECOIN_RPC_URL=https://api.calibration.node.glif.io/rpc/v1
+            - FILECOIN_PRIVATE_KEY=${FILECOIN_PRIVATE_KEY}
+            - FILECOIN_ADDRESS=${FILECOIN_ADDRESS}
+            - USDFC_ADDRESS=0xb3042734b608a1B16e9e86B374A3f3e389B4cDf0
+            - PANDORA_ADDRESS=0xf49ba5eaCdFD5EE3744efEdf413791935FE4D4c5
+            - PDP_VERIFIER_ADDRESS=0x5A23b7df87f59A291C26A2A1d684AD03Ce9B68DC
+            - PAYMENTS_ADDRESS=0x0E690D3e60B0576D01352AB03b258115eb84A047
+            - TEE_SOCKET_PATH=/var/run/tappd.sock
+            - MOCK_TEE_ATTESTATION=false
+            - LOG_LEVEL=info
+            - MPC_DERIVATION_PATH=filecoin-calibration-vibesflow-dispatcher
+            - MPC_KEY_VERSION=0
+            - WORKER_CHECKSUM=dispatcher_checksum_v1
+            - WORKER_CODEHASH=${DISPATCHER_CODEHASH}
+            - PHALA_CLOUD=true
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        restart: always
+        
+    chunker:
+        platform: linux/amd64
+        image: ghcr.io/vibesflow/chunker:latest@sha256:4c45af7bea806284aa900368c935d42c6204ac18e4e403397693d0eef91db304
+        container_name: vibesflow-chunker
+        ports:
+            - '3001:3001'
+        environment:
+            - NEAR_ACCOUNT_ID=${NEAR_ACCOUNT_ID_CHUNKER}
+            - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY_CHUNKER}
+            - NEAR_NETWORK=testnet
+            - AGENT_CONTRACT_ID=${AGENT_CONTRACT_ID_CHUNKER}
+            - RTA_FACTORY_CONTRACT=rtav2.vibesflow.testnet
+            - MPC_CONTRACT_ID=v1.signer-prod.testnet
+            - PORT=3001
+            - NODE_ENV=production
+            - CHUNK_DURATION_MS=60000
+            - SAMPLE_RATE=44100
+            - CHANNELS=2
+            - BITS_PER_SAMPLE=16
+            - TEE_SOCKET_PATH=/var/run/tappd.sock
+            - MOCK_TEE_ATTESTATION=false
+            - LOG_LEVEL=info
+            - MPC_DERIVATION_PATH=ethereum-filecoin-vibesflow-chunker
+            - MPC_KEY_VERSION=0
+            - WORKER_CHECKSUM=chunker_checksum_v1
+            - WORKER_CODEHASH=${CHUNKER_CODEHASH}
+            - PHALA_CLOUD=true
+        volumes:
+            - /var/run/tappd.sock:/var/run/tappd.sock
+        restart: always

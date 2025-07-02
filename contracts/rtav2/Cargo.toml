@@ -1,0 +1,30 @@
+[package]
+name = "rtav2"
+version = "0.1.0"
+edition = "2021"
+authors = ["VibesFlow <team@vibesflow.ai>"]
+description = "RTAv2: Real-Time Asset NFT factory for dynamic vibestream ownership (V2)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+near-sdk = "5.14.0"
+near-contract-standards = "5.14.0"
+borsh = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+base64 = "0.22"
+schemars = "0.8"
+
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+# Opt into extra safety checks on arithmetic operations https://stackoverflow.com/a/64136471/249801
+overflow-checks = true
+
+[workspace]
