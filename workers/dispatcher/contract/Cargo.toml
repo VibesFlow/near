@@ -4,6 +4,10 @@ description = "VibesFlow Dispatcher Shade Agent Contract"
 version = "0.1.0"
 edition = "2021"
 
+[package.metadata.near.reproducible_build]
+tag = "v2.1.0"
+repository = "https://github.com/near/cargo-near"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
@@ -19,16 +23,11 @@ serde = "1.0.217"
 
 dcap-qvl = { git = "https://github.com/mattlockyer/dcap-qvl" }
 
-# rustls-webpki = {git = "https://github.com/mattlockyer/webpki", default-features = false, features=[
-#    "near-wasm",
-# ]}
+rustls-webpki = {git = "https://github.com/mattlockyer/webpki", default-features = false, features=[
+"near-wasm",]}
 
 [dev-dependencies]
 near-sdk = { version = "5.7.0", features = ["unit-testing"] }
-
-[package.metadata.near.reproducible_build]
-image = "sourcescan/cargo-near:0.7.1-rust-1.80.0"
-dockerfile = "Dockerfile"
 
 [profile.release]
 codegen-units = 1
