@@ -1,9 +1,69 @@
+version: '3.8'
+
 services:
-    web:
-        platform: linux/amd64
-        image: ghcr.io/vibesflow/chunker:latest
-        ports:
-            - '3000:3000'
-        volumes:
-            - /var/run/tappd.sock:/var/run/tappd.sock
-        restart: always
+  chunker-worker:
+    image: ghcr.io/vibesflow/chunker-worker:latest
+    container_name: vibesflow-chunker-worker
+    restart: unless-stopped
+    
+    ports:
+      - "3001:3001"
+    
+    environment:
+      # NEAR Configuration
+      - NEAR_ACCOUNT_ID=${NEAR_ACCOUNT_ID:-chunker.vibesflow.testnet}
+      - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY}
+      
+      # Contract Configuration
+      - AGENT_CONTRACT_ID=${AGENT_CONTRACT_ID:-v1chunker.vibesflow.testnet}
+      - MPC_CONTRACT_ID=${MPC_CONTRACT_ID:-v1.signer-prod.testnet}
+      - CONTRACT_CODEHASH=${CONTRACT_CODEHASH:-8c8d4b17abd3e7855352c996092c5c3d814ee22314f9ef5fcb958b3d7a2d1868}
+      
+      # Backend URLs
+      - RAWCHUNKS_BACKEND_URL=${RAWCHUNKS_BACKEND_URL:-https://nbmkaf3izjgxkervazdrnpge4i0hodwx.lambda-url.us-east-1.on.aws}
+      - DISPATCHER_URL=${DISPATCHER_URL:-http://localhost:3000}
+      
+      # Pinata Configuration
+      - PINATA_JWT=${PINATA_JWT}
+      - PINATA_URL=${PINATA_URL:-gray-clean-parrotfish-186.mypinata.cloud}
+      
+      # TEE Configuration
+      - TEE_MODE=${TEE_MODE:-development}
+      - DSTACK_SIMULATOR_ENDPOINT=${DSTACK_SIMULATOR_ENDPOINT}
+      
+      # Server Configuration
+      - PORT=3001
+      - NODE_ENV=production
+    
+    volumes:
+      - chunker_temp:/app/temp
+      - chunker_receipts:/app/receipts
+      - chunker_logs:/app/logs
+    
+    networks:
+      - vibesflow-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  chunker_temp:
+    driver: local
+  chunker_receipts:
+    driver: local
+  chunker_logs:
+    driver: local
+
+networks:
+  vibesflow-network:
+    driver: bridge

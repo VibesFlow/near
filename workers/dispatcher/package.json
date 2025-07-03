@@ -1,45 +1,40 @@
 {
   "name": "vibesflow-dispatcher-worker",
   "version": "1.0.0",
-  "description": "VibesFlow Dispatcher Worker - Shade Agent for Filecoin Storage",
+  "description": "VibesFlow Dispatcher Worker Agent - Express-based TEE worker for Phala Cloud",
+  "main": "server.js",
   "type": "module",
-  "main": "index.js",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "contract:build": "cd contract && cargo near build",
-    "contract:deploy": "cd contract && cargo near build non-reproducible-wasm && cd .. && node utils/deploy-contract.js",
-    "docker:build": "docker buildx build --platform linux/amd64 --no-cache --target prod -t vibesflow/dispatcher:latest .",
-    "docker:push": "docker push vibesflow/dispatcher:latest"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node test/express-test.js"
   },
   "dependencies": {
-    "@neardefi/shade-agent-js": "^0.2.1",
-    "@phala/dstack-sdk": "^0.5.0-beta.2",
-    "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
     "near-api-js": "^5.0.0",
     "near-seed-phrase": "^0.2.0",
-    "ethers": "^6.13.2",
-    "multer": "^1.4.5-lts.1"
+    "@filoz/synapse-sdk": "^0.13.0",
+    "ethers": "^6.13.4",
+    "dotenv": "^16.4.7",
+    "node-fetch": "^3.3.2",
+    "form-data": "^4.0.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "typescript": "^5",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.5"
+    "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
-    "shade-agent",
-    "near-protocol",
-    "filecoin",
-    "storage",
+    "near",
+    "shade-agents",
     "tee",
-    "phala"
+    "phala",
+    "filecoin",
+    "dispatcher"
   ],
+  "author": "VibesFlow",
   "license": "MIT"
 }

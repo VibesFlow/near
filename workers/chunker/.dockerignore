@@ -5,3 +5,13 @@ npm-debug.log
 README.md
 .next
 .git
+.gitignore
+.env*
+.nyc_output
+coverage
+.cache
+dist
+*.log
+temp/*
+receipts/*
+logs/*

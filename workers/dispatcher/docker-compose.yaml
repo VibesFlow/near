@@ -1,13 +1,72 @@
 services:
     dispatcher:
-        image: vibesflow/dispatcher:latest
-        # Update with your actual code hash from docker build
-        labels:
-            - "dstack.image_id=e37aad8413f17218546991dbe866893802ec0505d1e3bc03a876b06053984925"
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: prod
+        container_name: v1dispatcher
+        restart: unless-stopped
         ports:
-            - '3000:3000'
+            - "3000:3000"
         volumes:
-            - /var/run/tappd.sock:/var/run/tappd.sock
-        restart: always
+            - ./uploads:/app/uploads
+            - ./receipts:/app/receipts
+            - ./temp:/app/temp
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        labels:
+            - "com.phala.dstack.agent=vibesflow-dispatcher"
+            - "com.phala.dstack.contract=${AGENT_CONTRACT_ID:-v1dispatcher.vibesflow.testnet}"
+            - "com.phala.dstack.codehash=${CONTRACT_CODEHASH:-1684d223bf0d4fe4b0a5932ee972969d09a4c97db2f7565f4be7c34388b850f6}"
+            - "com.phala.dstack.tee=true"
+            - "com.phala.dstack.version=1.0.0"
         environment:
+            # Node.js Configuration
             - NODE_ENV=production
+            - PORT=3000
+            - HOSTNAME=0.0.0.0
+            
+            # NEAR Configuration
+            - NEAR_ACCOUNT_ID=${NEAR_ACCOUNT_ID}
+            - NEAR_PRIVATE_KEY=${NEAR_PRIVATE_KEY}
+            - AGENT_CONTRACT_ID=${AGENT_CONTRACT_ID:-v1dispatcher.vibesflow.testnet}
+            - MPC_CONTRACT_ID=${MPC_CONTRACT_ID:-v1.signer-prod.testnet}
+            - CONTRACT_CODEHASH=${CONTRACT_CODEHASH:-1684d223bf0d4fe4b0a5932ee972969d09a4c97db2f7565f4be7c34388b850f6}
+            
+            # Filecoin Configuration
+            - FILECOIN_PRIVATE_KEY=${FILECOIN_PRIVATE_KEY}
+            - FILECOIN_ADDRESS=${FILECOIN_ADDRESS}
+            - FILECOIN_RPC_URL=${FILECOIN_RPC_URL:-https://api.calibration.node.glif.io/rpc/v1}
+            
+            # Synapse Configuration
+            - PANDORA_ADDRESS=${PANDORA_ADDRESS}
+            - USDFC_ADDRESS=${USDFC_ADDRESS}
+            - PDP_VERIFIER_ADDRESS=${PDP_VERIFIER_ADDRESS}
+            
+            # Storage Configuration
+            - STORAGE_CAPACITY_GB=${STORAGE_CAPACITY_GB:-10}
+            - PERSISTENCE_PERIOD_DAYS=${PERSISTENCE_PERIOD_DAYS:-30}
+            - WITH_CDN=${WITH_CDN:-true}
+            
+            # TEE Configuration (set by Phala Cloud)
+            - DSTACK_SIMULATOR_ENDPOINT=${DSTACK_SIMULATOR_ENDPOINT}
+    
+    networks:
+      - dispatcher-network
+
+networks:
+  dispatcher-network:
+    driver: bridge
+    name: vibesflow-dispatcher-network
+
+volumes:
+  uploads:
+    driver: local
+  receipts:
+    driver: local
+  temp:
+    driver: local

@@ -18,3 +18,4 @@ shade-agents/chunker/env.example
 shade-agents/producer/env.example
 shade-agents/dispatcher/env.example
 shade-agents/swapper/env.example
+workers/chunker/utils/README.md
