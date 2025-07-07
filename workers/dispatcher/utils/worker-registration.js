@@ -57,14 +57,14 @@ export class WorkerRegistration {
             console.log('🔑 Deriving worker account following shade-agent-js pattern...');
             
             if (process.env.NODE_ENV !== 'production') {
-                // In development, use the main account
+
                 this.workerAccountId = this.mainAccountId;
                 this.workerPrivateKey = this.mainPrivateKey;
                 console.log(`✅ Development mode - using main account: ${this.workerAccountId}`);
                 return;
             }
             
-            // Production mode - derive from TEE entropy or crypto randomness
+            // Derive from TEE entropy or crypto randomness
             const randomArray = new Uint8Array(32);
             crypto.getRandomValues(randomArray);
             
@@ -261,8 +261,8 @@ export class WorkerRegistration {
             throw new Error('TEE client not available');
         }
         
-        // Generate real attestation quote
-        const attestationQuote = await this.generateRealAttestationQuote();
+        // Generate attestation quote
+        const attestationQuote = await this.generateAttestationQuote();
         
         const workerAccount = await getAccount(this.workerAccountId);
         
@@ -306,13 +306,13 @@ export class WorkerRegistration {
         };
     }
 
-    async generateRealAttestationQuote() {
+    async generateAttestationQuote() {
         try {
             if (!this.teeClient) {
                 throw new Error('TEE client not available');
             }
             
-            // Generate a real attestation quote using the TEE client
+            // Generate an attestation quote using the TEE client
             const quote = await this.teeClient.getRemoteAttestation({
                 challenge: this.codeHash
             });
@@ -320,7 +320,7 @@ export class WorkerRegistration {
             return new Uint8Array(quote);
             
         } catch (error) {
-            console.error('❌ Failed to generate real attestation quote:', error);
+            console.error('❌ Failed to generate attestation quote:', error);
             throw error;
         }
     }

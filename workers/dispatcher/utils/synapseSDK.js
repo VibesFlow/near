@@ -2,28 +2,26 @@ import { Synapse, TOKENS, CONTRACT_ADDRESSES, RPC_URLS, PandoraService, SIZE_CON
 import { ethers } from 'ethers';
 
 /**
- * StorageService - Production implementation following fs-upload-dapp tutorial exactly
- * Updated for Synapse SDK v0.13.0 with proper integration patterns
+ * StorageService - Production implementation following fs-upload-dapp tutorial
  * 
  * Features:
- * - Exact fs-upload-dapp configuration and flow
- * - Production USDFC payment setup using PandoraService
+ * - fs-upload-dapp configuration and flow
+ * - USDFC payment setup using PandoraService
  * - CDN enabled for all uploads
  * - Full CID and PDP receipt handling
  * - Support for audio files with proper metadata
- * - No dev mode fallbacks - PRODUCTION ONLY
  */
 export class StorageService {
     constructor(config = {}) {
-        // Storage configuration following fs-upload-dapp config.ts exactly
+        // Storage configuration
         this.config = {
-            storageCapacity: config.storageCapacity || 10, // GB, maximum storage capacity
-            persistencePeriod: config.persistencePeriod || 30, // days, data persistence duration
-            minDaysThreshold: config.minDaysThreshold || 10, // days, threshold for low-balance warnings
-            withCDN: true // Whether to use CDN for the storage for faster retrieval
+            storageCapacity: config.storageCapacity || 10,
+            persistencePeriod: config.persistencePeriod || 30,
+            minDaysThreshold: config.minDaysThreshold || 10,
+            withCDN: true 
         };
         
-        // Filecoin configuration - PRODUCTION only
+        // Filecoin configuration
         this.filecoinPrivateKey = config.filecoinPrivateKey;
         this.filecoinRpcUrl = config.filecoinRpcUrl || RPC_URLS.calibration.http;
         this.network = 'calibration'; 
@@ -37,7 +35,7 @@ export class StorageService {
         // State tracking
         this.isInitialized = false;
         this.lastBalanceCheck = 0;
-        this.balanceCheckInterval = 60000; // 1 minute
+        this.balanceCheckInterval = 60000
     }
 
     async initialize() {
@@ -59,7 +57,7 @@ export class StorageService {
             const balance = await this.filecoinProvider.getBalance(this.filecoinSigner.address);
             console.log(`💰 Current tFIL balance: ${ethers.formatEther(balance)} tFIL`);
             
-            // Initialize Synapse SDK following fs-upload-dapp tutorial exactly
+            // Initialize Synapse SDK
             this.synapse = await Synapse.create({
                 privateKey: this.filecoinPrivateKey,
                 rpcURL: this.filecoinRpcUrl
@@ -73,7 +71,7 @@ export class StorageService {
             
             console.log(`✅ Synapse SDK initialized with CDN support`);
             
-            // Setup storage payments following fs-upload-dapp patterns
+            // Setup storage payments
             await this.setupStoragePayments();
             
             this.isInitialized = true;
@@ -89,7 +87,7 @@ export class StorageService {
         try {
             console.log('💰 Setting up storage payments following fs-upload-dapp patterns...');
             
-            // Get balance information following useBalances.ts pattern
+            // Get balance information
             const balances = await this.getBalances();
             console.log(`💳 Current USDFC wallet balance: ${balances.usdfcBalance} USDFC`);
             console.log(`🏦 USDFC balance in payments contract: ${balances.pandoraBalance} USDFC`);
@@ -195,10 +193,10 @@ export class StorageService {
             console.log(`📤 Uploading audio file: ${filename} following fs-upload-dapp patterns`);
             console.log(`📊 File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
             
-            // Convert to Uint8Array following fs-upload-dapp useFileUpload.ts
+            // Convert to Uint8Array 
             const uint8ArrayBytes = new Uint8Array(fileBuffer);
             
-            // Create storage service following fs-upload-dapp patterns
+            // Create storage service
             console.log('🗄️ Creating storage service...');
             const storageService = await this.synapse.createStorage({
                 withCDN: this.config.withCDN
@@ -206,7 +204,7 @@ export class StorageService {
             
             console.log(`🗄️ Storage service created with CDN: ${this.config.withCDN}`);
             
-            // Upload file following fs-upload-dapp useFileUpload.ts exactly
+            // Upload file
             console.log('📁 Uploading to storage provider...');
             const uploadResult = await storageService.upload(uint8ArrayBytes);
             
@@ -218,7 +216,7 @@ export class StorageService {
             console.log(`📊 CommP (CID): ${uploadResult.commp}`);
             console.log(`📏 Size: ${uploadResult.size || uint8ArrayBytes.length} bytes`);
             
-            // Return complete upload result following fs-upload-dapp format
+            // Return complete upload
             return {
                 success: true,
                 // CID information (primary identifier)
@@ -300,7 +298,7 @@ export class StorageService {
             
             console.log(`📥 Downloading content with CID: ${cid}`);
             
-            // Create storage service for download following fs-upload-dapp useDownloadRoot.ts
+            // Create storage service for download 
             const storageService = await this.synapse.createStorage({
                 withCDN: this.config.withCDN
             });
@@ -327,7 +325,7 @@ export class StorageService {
                 await this.initialize();
             }
             
-            // Get balances following useBalances.ts pattern
+            // Get balances
             const [filRaw, usdfcRaw, paymentsRaw] = await Promise.all([
                 this.synapse.payments.walletBalance(), // FIL balance
                 this.synapse.payments.walletBalance(TOKENS.USDFC), // USDFC wallet balance

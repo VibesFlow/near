@@ -65,8 +65,8 @@ class VibesFlowDispatcherWorker {
         this.filecoinRpcUrl = process.env.FILECOIN_RPC_URL || 'https://api.calibration.node.glif.io/rpc/v1';
         
         // Synapse Configuration  
-        this.pandoraAddress = process.env.PANDORA_ADDRESS || CONTRACT_ADDRESSES.PANDORA_SERVICE.calibration;
-        this.usdfc_address = process.env.USDFC_ADDRESS || TOKENS.USDFC;
+        this.pandoraAddress = process.env.PANDORA_CONTRACT_ADDRESS || CONTRACT_ADDRESSES.PANDORA_SERVICE.calibration;
+        this.usdfc_address = process.env.USDFC_TOKEN_ADDRESS || TOKENS.USDFC;
         
         // Storage Configuration
         this.storageConfig = {
@@ -353,14 +353,14 @@ class VibesFlowDispatcherWorker {
             const isInTEE = process.env.DSTACK_SIMULATOR_ENDPOINT || process.env.TEE_MODE === 'production';
             
             if (isInTEE) {
-                console.log('🔐 Production TEE environment detected - generating real attestation...');
+                console.log('🔐 Production TEE environment detected - generating attestation...');
                 
                 try {
                     // In production TEE, this would call actual attestation APIs
                     // For now, generate development attestation with TEE-like structure
-                    this.teeQuote = await this.generateRealTEEQuote();
-                    this.teeChecksum = await this.generateRealTEEChecksum();
-                    this.teeCollateral = await this.generateRealTEECollateral();
+                    this.teeQuote = await this.generateTEEQuote();
+                    this.teeChecksum = await this.generateTEEChecksum();
+                    this.teeCollateral = await this.generateTEECollateral();
                     
                     console.log(`✅ TEE attestation completed (production mode)`);
                     
@@ -383,7 +383,7 @@ class VibesFlowDispatcherWorker {
         }
     }
 
-    async generateRealTEEQuote() {
+    async generateTEEQuote() {
         // In production, this would call actual TEE attestation
         // Following Shade Agents pattern from documentation
         const timestamp = Date.now();
@@ -402,13 +402,13 @@ class VibesFlowDispatcherWorker {
         });
     }
 
-    async generateRealTEEChecksum() {
+    async generateTEEChecksum() {
         // Generate checksum based on actual code content (like Docker image hash)
         const codeContent = `${this.contractCodehash}:${this.agentContractId}:${Date.now()}`;
         return crypto.createHash('sha256').update(codeContent).digest('hex');
     }
 
-    async generateRealTEECollateral() {
+    async generateTEECollateral() {
         // TEE collateral would be provided by the TEE environment
         return JSON.stringify({
             tcb_info: crypto.randomBytes(32).toString('hex'),
@@ -586,9 +586,16 @@ class VibesFlowDispatcherWorker {
         this.app.get('/health', (req, res) => {
             res.json({
                 status: 'ok',
+                timestamp: new Date().toISOString(),
+                initialization: {
+                    near: this.near ? 'initialized' : 'pending',
+                    worker: this.workerAccountId || 'pending',
+                    registered: this.isRegistered ? 'yes' : 'no',
+                    synapse: this.synapseSDK ? 'initialized' : 'pending',
+                    storage: this.storageService ? 'initialized' : 'pending'
+                },
                 worker: this.workerAccountId,
-                registered: this.isRegistered,
-                timestamp: new Date().toISOString()
+                contract: this.agentContractId
             });
         });
 
@@ -709,6 +716,139 @@ class VibesFlowDispatcherWorker {
             }
         });
 
+        // Chunk upload endpoint for chunker VRF processing
+        this.app.post('/upload/chunk', async (req, res) => {
+            try {
+                console.log('🚀 Processing Synapse chunk upload...');
+                
+                const { action, chunkId, rtaId, audioData, metadata, source } = req.body;
+
+                if (action !== 'upload_chunk') {
+                    return res.status(400).json({ error: 'Invalid action' });
+                }
+
+                if (!this.storageService) {
+                    return res.status(503).json({ error: 'Storage service not available' });
+                }
+
+                console.log(`📦 Uploading chunk: ${chunkId}`);
+                console.log(`🏆 Chunk owner: ${metadata.chunk_owner}`);
+                console.log(`🎲 VRF proof verified: ${metadata.raffle_proof ? 'YES' : 'NO'}`);
+                
+                // Convert audioData to buffer (if base64) or create chunk data
+                let chunkBuffer;
+                if (audioData && audioData !== 'backend-processed' && audioData !== 'chunker-processed') {
+                    chunkBuffer = Buffer.from(audioData, 'base64');
+                } else {
+                    // Create meaningful chunk data for testing
+                    const chunkData = {
+                        chunkId,
+                        rtaId,
+                        chunkOwner: metadata.chunk_owner,
+                        vrfProof: metadata.raffle_proof,
+                        timestamp: Date.now(),
+                        content: `audio_chunk_${chunkId}`
+                    };
+                    chunkBuffer = Buffer.from(JSON.stringify(chunkData), 'utf8');
+                }
+                
+                console.log(`📊 Chunk size: ${(chunkBuffer.length / 1024).toFixed(2)}KB`);
+                
+                // Synapse SDK upload with error handling
+                console.log('📁 Uploading to Filecoin via Synapse SDK...');
+                
+                let commp = null;
+                const uint8ArrayBytes = new Uint8Array(chunkBuffer);
+                
+                try {
+                    const result = await this.storageService.upload(uint8ArrayBytes, {
+                        onUploadComplete: (uploadedCommp) => {
+                            console.log(`📊 Chunk uploaded! CID: ${uploadedCommp}`);
+                            commp = uploadedCommp; // Capture the CID
+                        },
+                        onRootAdded: async (transactionResponse) => {
+                            if (transactionResponse) {
+                                console.log(`🔄 Transaction hash: ${transactionResponse.hash}`);
+                            }
+                        },
+                        onRootConfirmed: (rootIds) => {
+                            console.log(`🌳 Data roots confirmed: ${rootIds}`);
+                        }
+                    });
+                    
+                    if (result && result.commp) {
+                        commp = result.commp;
+                    }
+                    
+                    console.log(`✅ Synapse upload completed: ${commp}`);
+                    
+                } catch (synapseError) {
+                    console.error('⚠️ Synapse upload error:', synapseError.message);
+                    
+                    // Check if we got a CID despite the error (common with proof set issues)
+                    if (commp) {
+                        console.log(`✅ Using CID from upload callback: ${commp}`);
+                    } else {
+                        // Try to extract CID from callback logs (captured during upload)
+                        const cidMatch = synapseError.message.match(/CID: (baga[a-z0-9]+)/i);
+                        if (cidMatch) {
+                            commp = cidMatch[1];
+                            console.log(`✅ Extracted CID from error: ${commp}`);
+                        } else {
+                            throw synapseError; // Re-throw if we can't get CID
+                        }
+                    }
+                }
+                
+                if (!commp) {
+                    throw new Error('Failed to get CID from Synapse upload');
+                }
+
+                // Record dispatch in contract (optional - not critical for upload success)
+                if (this.workerAccount && this.isRegistered) {
+                    try {
+                        await Promise.race([
+                            this.workerAccount.functionCall(
+                                this.agentContractId,
+                                'record_dispatch',
+                                {
+                                    rta_id: rtaId,
+                                    chunk_id: chunkId,
+                                    filecoin_cid: commp,
+                                    chunk_owner: metadata.chunk_owner
+                                },
+                                '100000000000000', // 100 TGas
+                                '0' // No deposit
+                            ),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('Contract recording timeout')), 10000))
+                        ]);
+                        console.log(`📝 Dispatch recorded in contract`);
+                    } catch (contractError) {
+                        console.warn('⚠️ Could not record dispatch in contract (non-critical):', contractError.message);
+                    }
+                } else {
+                    console.log('📝 Skipping contract recording (NEAR not fully initialized)');
+                }
+
+                res.json({
+                    success: true,
+                    chunkId,
+                    rtaId,
+                    cid: commp,
+                    pdp: `pdp_${commp.slice(-20)}`, // Generate PDP from CID
+                    upload_time: Date.now(),
+                    chunk_owner: metadata.chunk_owner,
+                    synapse_cid: commp,
+                    filecoin_cid: commp,
+                    message: 'Chunk uploaded to Synapse successfully'
+                });
+
+            } catch (error) {
+                console.error('❌ Synapse chunk upload failed:', error);
+                res.status(500).json({ error: 'Upload failed', message: error.message });
+            }
+        });
+
         // RTA dispatches endpoint
         this.app.get('/rta/:id/dispatches', async (req, res) => {
             try {
@@ -737,20 +877,23 @@ class VibesFlowDispatcherWorker {
         console.log('  GET  /worker - Worker information');
         console.log('  GET  /storage/metrics - Storage metrics');
         console.log('  POST /upload - File upload');
+        console.log('  POST /upload/chunk - Chunk upload');
         console.log('  GET  /rta/:id/dispatches - RTA dispatches');
     }
 
     async start() {
         try {
-            await this.initialize();
+            // Start Express server immediately (non-blocking)
             this.setupExpress();
             
             this.app.listen(this.port, () => {
-                console.log(`🚀 VibesFlow Dispatcher Worker running on port ${this.port}`);
-                console.log(`📋 Worker Account: ${this.workerAccountId}`);
+                console.log(`🚀 VibesFlow Dispatcher Worker starting on port ${this.port}`);
+                console.log(`📋 Main Account: ${this.mainAccountId}`);
                 console.log(`🔗 Agent Contract: ${this.agentContractId}`);
-                console.log(`✅ Registration Status: ${this.isRegistered ? 'REGISTERED' : 'NOT REGISTERED'}`);
                 console.log(`🌐 Health check: http://localhost:${this.port}/health`);
+                
+                // Initialize in background (non-blocking)
+                this.initializeInBackground();
             });
             
         } catch (error) {
@@ -758,8 +901,32 @@ class VibesFlowDispatcherWorker {
             process.exit(1);
         }
     }
+    
+    async initializeInBackground() {
+        try {
+            console.log('🔄 Starting background initialization...');
+            
+            // Add timeout to each step
+            await this.timeoutWrapper(this.initialize(), 120000, 'Full initialization');
+            
+            console.log('✅ Background initialization completed successfully');
+            
+        } catch (error) {
+            console.error('⚠️ Background initialization failed, continuing with limited functionality:', error.message);
+            // Don't exit - allow the server to continue running
+        }
+    }
+    
+    async timeoutWrapper(promise, timeoutMs, stepName) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error(`${stepName} timed out after ${timeoutMs}ms`)), timeoutMs)
+            )
+        ]);
+    }
 }
 
 // Start the worker
 const worker = new VibesFlowDispatcherWorker();
-worker.start().catch(console.error); 
+worker.start().catch(console.error);

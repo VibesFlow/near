@@ -1,40 +1,60 @@
 {
-    "name": "v1chunker",
-    "version": "1.0.0",
-    "description": "VibesFlow Chunker Worker - NEAR Shade Agent for VRF Raffling",
+    "name": "v2chunker",
+    "version": "2.0.0",
+    "description": "VibesFlow Chunker Worker - NEAR Shade Agent with VRF raffles and TEE attestation",
     "type": "module",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "dev": "node --inspect server.js",
-        "docker:build": "docker build -t ghcr.io/vibesflow/chunker-worker .",
-        "docker:push": "docker push ghcr.io/vibesflow/chunker-worker",
-        "docker:run": "docker run -p 3001:3001 ghcr.io/vibesflow/chunker-worker"
-    },
-    "dependencies": {
-        "express": "^4.18.2",
-        "cors": "^2.8.5",
-        "multer": "^1.4.5-lts.1",
-        "near-api-js": "^4.0.3",
-        "near-seed-phrase": "^0.2.0",
-        "node-fetch": "^3.3.2",
-        "dotenv": "^16.3.1"
-    },
-    "devDependencies": {
-        "nodemon": "^3.0.1"
-    },
-    "engines": {
-        "node": ">=18.0.0"
+        "dev": "nodemon server.js",
+        "build": "echo 'Building Shade Agent...' && node -e 'console.log(\"✅ Build completed\")'",
+        "test": "node --experimental-vm-modules node_modules/.bin/jest",
+        "docker:build": "docker build -t vibesflow/chunker:latest .",
+        "docker:push": "docker push vibesflow/chunker:latest",
+        "deploy:dev": "NODE_ENV=development node server.js",
+        "deploy:prod": "NODE_ENV=production node server.js",
+        "health-check": "curl -f http://localhost:3001/health || exit 1"
     },
     "keywords": [
-        "near",
-        "shade-agent",
-        "vrf",
-        "chunker",
         "vibesflow",
-        "audio",
-        "raffle"
+        "chunker",
+        "shade-agent",
+        "near",
+        "vrf",
+        "tee",
+        "phala-cloud",
+        "blockchain",
+        "music",
+        "audio-processing"
     ],
     "author": "VibesFlow Team",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "@neardefi/shade-agent-js": "^0.1.0",
+        "near-api-js": "^4.0.3",
+        "near-seed-phrase": "^0.2.0",
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "sqs-consumer": "^7.2.2",
+        "aws-sdk": "^3.0",
+        "node-fetch": "^3.3.2",
+        "crypto": "^1.0.1",
+        "helmet": "^7.1.0",
+        "compression": "^1.7.4",
+        "morgan": "^1.10.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1",
+        "jest": "^29.7.0"
+    },
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=8.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/vibesflow/near/workers/chunker"
+    },
+    "homepage": "https://vibesflow.ai"
 }

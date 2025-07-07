@@ -96,9 +96,6 @@ impl Contract {
             "Caller must match worker account"
         );
 
-        // In production, you could add additional verification of the tee_verification_proof
-        // For now, we trust that the worker agent properly verified the TEE attestation
-        
         let predecessor = env::predecessor_account_id();
         self.worker_by_account_id.insert(
             predecessor,
@@ -111,7 +108,7 @@ impl Contract {
         true
     }
 
-    // Development registration - simplified for dev mode
+    // Development registration
     pub fn register_worker_dev(&mut self, codehash: String) -> bool {
         // verify the code hashes are approved
         require!(self.approved_codehashes.contains(&codehash), "Codehash not approved");
@@ -159,7 +156,7 @@ impl Contract {
         self.worker_by_account_id.contains_key(&worker_account_id)
     }
 
-    // View functions - EXACT copy from template
+    // View functions
     pub fn get_worker(&self, account_id: AccountId) -> Worker {
         self.worker_by_account_id
             .get(&account_id)
@@ -172,7 +169,7 @@ impl Contract {
         self.owner_id.clone()
     }
 
-    // Helpers for method access control - EXACT copy from template
+    // Helpers for method access control
     fn require_owner(&self) {
         require!(env::predecessor_account_id() == self.owner_id);
     }

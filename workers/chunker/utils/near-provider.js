@@ -1,9 +1,7 @@
 import * as dotenv from 'dotenv';
 if (process.env.NODE_ENV !== 'production') {
-    // will load for browser and backend
     dotenv.config({ path: './.env.development.local' });
 } else {
-    // load .env in production
     dotenv.config();
 }
 
@@ -16,9 +14,8 @@ const {
     utils: { PublicKey },
 } = nearAPI;
 
-// from .env
 let _contractId = process.env.NEXT_PUBLIC_contractId;
-// from .env.development.local
+
 let secretKey = process.env.NEXT_PUBLIC_secretKey;
 let _accountId = process.env.NEXT_PUBLIC_accountId;
 
@@ -53,12 +50,10 @@ export const setKey = (accountId, secretKey) => {
     // set in-memory keystore only
     keyStore.setKey(networkId, accountId, keyPair);
 };
-// .env.development.local - automatically set key to dev account
 if (secretKey) {
     setKey(_accountId, secretKey);
 }
-// .env.development.local - for tests expose keyPair and use for contract account (sub account of dev account)
-// process.env.NEXT_PUBLIC_secretKey not set in production
+
 export const getDevAccountKeyPair = () => {
     const keyPair = KeyPair.fromString(process.env.NEXT_PUBLIC_secretKey);
     keyStore.setKey(networkId, contractId, keyPair);
@@ -84,8 +79,6 @@ export const getBalance = async (accountId) => {
     }
     return balance;
 };
-
-// contract interactions
 
 export const contractView = async ({
     accountId,
@@ -139,10 +132,7 @@ export const contractCall = async ({
                 res.final_execution_status != 'EXECUTED' &&
                 pings < maxPings
             ) {
-                // Sleep 1 second before next ping.
                 await sleep(1000);
-                // txStatus times out when waiting for 'EXECUTED'.
-                // Instead we wait for an earlier status type, sleep between and keep pinging.
                 res = await provider.txStatus(
                     e.context.transactionHash,
                     account.accountId,

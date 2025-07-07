@@ -1,0 +1,47 @@
+🚀 Initializing VibesFlow Dispatcher Worker (Shade Agent)...
+📋 Main Account: dispatcher.vibesflow.testnet
+🔗 Agent Contract: v1dispatcher.vibesflow.testnet
+💰 Filecoin Wallet: 0xedD801D6c993B3c8052e485825A725ee09F1ff4D
+📁 Directories created successfully
+✅ NEAR initialized: dispatcher.vibesflow.testnet
+🔑 Deriving DETERMINISTIC worker account following shade-agent-js pattern...
+✅ DETERMINISTIC worker account derived: 4599799fc8969a8a974c495b6bd250eed2508b85b331e03aabd89f7448e0f878
+🔑 Worker public key: ed25519:5ggsBrpzaM6YXXcbphSfrrWEzTTKAAJKauaSoZ9SQ2d5
+💰 Funding worker account...
+💰 Worker balance: 0.49818 NEAR
+✅ Worker account has sufficient balance
+🔌 Initializing Filecoin connection...
+✅ Filecoin signer: 0xedD801D6c993B3c8052e485825A725ee09F1ff4D
+💰 tFIL balance: 199.99919030896398641 tFIL
+🔌 Initializing Synapse SDK...
+✅ Synapse SDK initialized
+💰 Setting up storage payments...
+💳 USDFC wallet balance: 99.799999903764782219 USDFC
+🏦 USDFC payments balance: 99.99999999132689731 USDFC
+✅ USDFC payments balance sufficient: 99.99999999132689731 USDFC (no deposit needed)
+✅ Pandora service approved for 20.0 USDFC/epoch
+🗄️ Initializing storage service...
+✅ Storage service initialized with CDN: true
+🔐 Performing TEE attestation for Shade Agent registration...
+🔧 Development environment - using development attestation...
+🔐 TEE Checksum: 1b62623a722ce9b8af3e586af22f454d577aaa64c05106917d3632f6c6221086
+🔐 TEE Quote: {"mode":"development","timestamp...
+📝 Registering worker with contract following Shade Agents pattern...
+❌ Failed to get approved codehashes: ProviderError: Request validation error
+    at BackOff.request (/Users/jabyl/Downloads/VibesFlow/near/workers/dispatcher/node_modules/@near-js/providers/lib/commonjs/fetch_json.cjs:58:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  cause: 400
+}
+⚠️ Continuing with development mode bypass...
+✅ Worker initialization completed successfully
+🌐 Express server configured with endpoints:
+  GET  /health - Health check
+  GET  /worker - Worker information
+  GET  /storage/metrics - Storage metrics
+  POST /upload - File upload
+  GET  /rta/:id/dispatches - RTA dispatches
+🚀 VibesFlow Dispatcher Worker running on port 3000
+📋 Worker Account: 4599799fc8969a8a974c495b6bd250eed2508b85b331e03aabd89f7448e0f878
+🔗 Agent Contract: v1dispatcher.vibesflow.testnet
+✅ Registration Status: NOT REGISTERED
+🌐 Health check: http://localhost:3000/health
