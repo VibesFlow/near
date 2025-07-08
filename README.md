@@ -1,42 +1,49 @@
 # VibesFlow NEAR Protocol Integration
 
-## 🚀 Deployed Contracts
+## Deployed Contracts
 
-### RTA Factory Contract
-- **Address**: `rtav2.vibesflow.testnet`
-- **Purpose**: Creates and manages dynamic vibestream NFTs implementing NEP-171 and NEP-366 for delegation
+### RTA v2 Contract (`near/contracts/rtav2/`)
+
+Our NEAR smart contract implements **NEP-171** (Non-Fungible Token) and **NEP-366** (Delegation) standards to create unique NFTs for each vibestream session.
+
 - **Features**:
   - Dynamic NFT creation for vibestreams
   - Chunk data management with ownership tracking
+  - Editable metadata (till session ends) through delegation
   - RTA finalization when streams close
-  - Rich metadata with VRF proof integration
 
-### Vibe Agents Contracts
-- **Address**: `v1chunker.vibesflow.testnet`
-- **Transaction**: [F2xsHyiUMwMHWFUoeu7Aa4pdbkU9i5qKmrHvV5Q3WGQe](https://testnet.nearblocks.io/txns/F2xsHyiUMwMHWFUoeu7Aa4pdbkU9i5qKmrHvV5Q3WGQe)
-- **Purpose**: Chunker agent contract for TEE worker orchestration
+
+### Agents Contracts
 - **Features**:
   - Worker registration and management
-  - Cross-chain signatures (NEAR/Filecoin/Ethereum)
-  - Workflow orchestration for Chunker tasks
+  - Cross-chain signatures (NEAR/Filecoin)
+  - Workflow orchestration for individual Agent's tasks
   - MPC signatures via Chain Signatures
 
-## 🤖 TEE Workers
 
-### Worker Accounts
-- **Swapper**: `swapper.vibesflow.testnet`
-- **Chunker**: `chunker.vibesflow.testnet`  
-- **Dispatcher**: `dispatcher.vibesflow.testnet`
-- **Producer**: `producer.vibesflow.testnet`
+## Next steps:
 
-### Docker Images
-- `vibesflow/swapper:0.1.0` → `ghcr.io/vibesflow/swapper:latest`
-- `vibesflow/chunker:0.1.0` → `ghcr.io/vibesflow/chunker:latest`
-- `vibesflow/dispatcher:0.1.0` → `ghcr.io/vibesflow/dispatcher:latest`
-- `vibesflow/producer:0.1.0` → `ghcr.io/vibesflow/producer:latest`
+### Restoring Shade Agents (Chunker, Dispatcher) for:
+    - improved backend performance and reducing overhead 
+    - on-chain raffling (VRF) of chunk owners
+    - using "swarms" (of workers) to replace EC2 to speed-up parallel uploading and more reliable metadata structuring and compilation
 
-### Approved Code Hashes
-- **Swapper**: `97c410b0b4f2b138ec004fb28ecd8ff9e217fcdaeada340e25ce0b28b8b21681`
-- **Chunker**: `5d3f0f90fb6b0d3cb88b29d5a25726535563c281c62a79ec08c965904a814474`
-- **Dispatcher**: `9738d754b4a3d58103f6b6faa1793d1dd87ba0dfc64234bcb5d3e2b50cc12fbf`
-- **Producer**: `93892e904d933316a0202b78e863c0badde1ce30e05f28b43f059d6c6b6f91ab`
+### Deploying and integrating contracts:
+    - ppm.vibesflow.testnet: a "global" contract for pay-per-minute access to vibestreams.
+    - subscription.vibesflow.testnet: 5 NEAR / month for limitless access to the Vibe Market (playback streaming platform of completed RTAs)
+    - royalties.vibesflow.testnet: royalty distribution based on amount of monthly plays for the individual chunk (not the entire vibestream)
+
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App
+    participant NEAR
+    participant SynapseSDK
+    
+    User->>App: Starts vibestream session
+    App->>NEAR: Mint NFT with metadata
+    App->>Synapse: Store audio chunks + owners () + metadata
+    Dispatcher-->>NEAR: Complete vibestream metadata (with individual chunk owners and CIDs) appended to RTA through delegation
+    FilCDN-->>NEAR: query-based Chunk-plays to measure royalty splits
+```
